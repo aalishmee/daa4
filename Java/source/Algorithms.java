@@ -2,7 +2,10 @@ import java.util.*;
 
 public class Algorithms {
 
-    public static Object[] lcs(String a, String b) {
+    @SuppressWarnings("unchecked")
+    public static Object lcs(Map<String, Object> req) {
+        String a = (String) req.get("a");
+        String b = (String) req.get("b");
         int n = a.length(), m = b.length();
         int[][] dp = new int[n + 1][m + 1];
         for (int i = 1; i <= n; i++) {
@@ -23,12 +26,25 @@ public class Algorithms {
                 j--;
             }
         }
-        return new Object[]{ dp[n][m], sb.reverse().toString() };
+        Map<String, Object> res = new HashMap<>();
+        res.put("length", dp[n][m]);
+        res.put("sequence", sb.reverse().toString());
+        return res;
     }
 
-    public static Object[] merge(long[] sizes) {
-        int n = sizes.length;
-        if (n <= 1) return new Object[]{ 0L, new ArrayList<int[]>() };
+    @SuppressWarnings("unchecked")
+    public static Object merge(Map<String, Object> req) {
+        List<Object> sizesList = (List<Object>) req.get("sizes");
+        int n = sizesList.size();
+        long[] sizes = new long[n];
+        for (int i = 0; i < n; i++) sizes[i] = ((Number) sizesList.get(i)).longValue();
+
+        if (n <= 1) {
+            Map<String, Object> res = new HashMap<>();
+            res.put("cost", 0L);
+            res.put("plan", new ArrayList<int[]>());
+            return res;
+        }
 
         long[] pre = new long[n + 1];
         for (int i = 0; i < n; i++) pre[i + 1] = pre[i] + sizes[i];
@@ -52,7 +68,11 @@ public class Algorithms {
 
         List<int[]> plan = new ArrayList<>();
         buildPlan(0, n - 1, split, plan);
-        return new Object[]{ dp[0][n - 1], plan };
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("cost", dp[0][n - 1]);
+        res.put("plan", plan);
+        return res;
     }
 
     private static void buildPlan(int l, int r, int[][] split, List<int[]> plan) {
@@ -63,8 +83,28 @@ public class Algorithms {
         plan.add(new int[]{ l, k, r });
     }
 
-    public static Object[] tree(int n, long[] weights, int[][] edges) {
-        if (n == 0) return new Object[]{ 0L, new ArrayList<Integer>() };
+    @SuppressWarnings("unchecked")
+    public static Object tree(Map<String, Object> req) {
+        int n = ((Number) req.get("n")).intValue();
+        List<Object> weightsList = (List<Object>) req.get("weights");
+        List<Object> edgesList = (List<Object>) req.get("edges");
+
+        if (n == 0) {
+            Map<String, Object> res = new HashMap<>();
+            res.put("weight", 0L);
+            res.put("selected", new ArrayList<Integer>());
+            return res;
+        }
+
+        long[] weights = new long[n];
+        for (int i = 0; i < n; i++) weights[i] = ((Number) weightsList.get(i)).longValue();
+        
+        int[][] edges = new int[edgesList.size()][2];
+        for (int i = 0; i < edgesList.size(); i++) {
+            List<Object> e = (List<Object>) edgesList.get(i);
+            edges[i][0] = ((Number) e.get(0)).intValue();
+            edges[i][1] = ((Number) e.get(1)).intValue();
+        }
 
         List<List<Integer>> adj = new ArrayList<>(n);
         for (int i = 0; i < n; i++) adj.add(new ArrayList<>());
@@ -116,74 +156,105 @@ public class Algorithms {
                 for (int v : adj.get(u)) if (parent[v] == u) stack.push(new int[]{ v, 0 });
             }
         }
-        return new Object[]{ Math.max(take[0], skip[0]), selected };
-    }
-
-    public static List<Integer> naive(String text, String pattern) {
-        int n = text.length(), m = pattern.length();
-        List<Integer> res = new ArrayList<>();
-        if (m == 0) { for (int i = 0; i <= n; i++) res.add(i); return res; }
-        if (m > n) return res;
-        for (int i = 0; i + m <= n; i++) {
-            int j = 0;
-            while (j < m && text.charAt(i + j) == pattern.charAt(j)) j++;
-            if (j == m) res.add(i);
-        }
+        
+        Map<String, Object> res = new HashMap<>();
+        res.put("weight", Math.max(take[0], skip[0]));
+        res.put("selected", selected);
         return res;
     }
 
-    public static List<Integer> kmp(String text, String pattern) {
+    @SuppressWarnings("unchecked")
+    public static Object naive(Map<String, Object> req) {
+        String text = (String) req.get("text");
+        String pattern = (String) req.get("pattern");
         int n = text.length(), m = pattern.length();
         List<Integer> res = new ArrayList<>();
-        if (m == 0) { for (int i = 0; i <= n; i++) res.add(i); return res; }
-        if (m > n) return res;
-
-        int[] pi = new int[m];
-        int k = 0;
-        for (int i = 1; i < m; i++) {
-            while (k > 0 && pattern.charAt(i) != pattern.charAt(k)) k = pi[k - 1];
-            if (pattern.charAt(i) == pattern.charAt(k)) k++;
-            pi[i] = k;
-        }
-        int q = 0;
-        for (int i = 0; i < n; i++) {
-            while (q > 0 && text.charAt(i) != pattern.charAt(q)) q = pi[q - 1];
-            if (text.charAt(i) == pattern.charAt(q)) q++;
-            if (q == m) { res.add(i - m + 1); q = pi[q - 1]; }
-        }
-        return res;
-    }
-
-    public static List<Integer> rk(String text, String pattern) {
-        int n = text.length(), m = pattern.length();
-        List<Integer> res = new ArrayList<>();
-        if (m == 0) { for (int i = 0; i <= n; i++) res.add(i); return res; }
-        if (m > n) return res;
-
-        final long BASE = 31, MOD = 101;
-        long hp = 0, ht = 0, pw = 1;
-        for (int j = 0; j < m; j++) {
-            hp = (hp * BASE + pattern.charAt(j)) % MOD;
-            ht = (ht * BASE + text.charAt(j)) % MOD;
-            if (j < m - 1) pw = (pw * BASE) % MOD;
-        }
-        for (int i = 0; i + m <= n; i++) {
-            if (hp == ht) {
+        if (m == 0) { for (int i = 0; i <= n; i++) res.add(i); }
+        else if (m <= n) {
+            for (int i = 0; i + m <= n; i++) {
                 int j = 0;
                 while (j < m && text.charAt(i + j) == pattern.charAt(j)) j++;
                 if (j == m) res.add(i);
             }
-            if (i + m < n) {
-                ht = ((ht - text.charAt(i) * pw) % MOD + MOD) % MOD;
-                ht = (ht * BASE + text.charAt(i + m)) % MOD;
-            }
         }
-        return res;
+        Map<String, Object> out = new HashMap<>();
+        out.put("positions", res);
+        return out;
     }
 
-    public static Object[] suffix(String text) {
+    @SuppressWarnings("unchecked")
+    public static Object kmp(Map<String, Object> req) {
+        String text = (String) req.get("text");
+        String pattern = (String) req.get("pattern");
+        int n = text.length(), m = pattern.length();
+        List<Integer> res = new ArrayList<>();
+        
+        if (m == 0) { for (int i = 0; i <= n; i++) res.add(i); }
+        else if (m <= n) {
+            int[] pi = new int[m];
+            int k = 0;
+            for (int i = 1; i < m; i++) {
+                while (k > 0 && pattern.charAt(i) != pattern.charAt(k)) k = pi[k - 1];
+                if (pattern.charAt(i) == pattern.charAt(k)) k++;
+                pi[i] = k;
+            }
+            int q = 0;
+            for (int i = 0; i < n; i++) {
+                while (q > 0 && text.charAt(i) != pattern.charAt(q)) q = pi[q - 1];
+                if (text.charAt(i) == pattern.charAt(q)) q++;
+                if (q == m) { res.add(i - m + 1); q = pi[q - 1]; }
+            }
+        }
+        Map<String, Object> out = new HashMap<>();
+        out.put("positions", res);
+        return out;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Object rk(Map<String, Object> req) {
+        String text = (String) req.get("text");
+        String pattern = (String) req.get("pattern");
+        int n = text.length(), m = pattern.length();
+        List<Integer> res = new ArrayList<>();
+        
+        if (m == 0) { for (int i = 0; i <= n; i++) res.add(i); }
+        else if (m <= n) {
+            final long BASE = 31, MOD = 101;
+            long hp = 0, ht = 0, pw = 1;
+            for (int j = 0; j < m; j++) {
+                hp = (hp * BASE + pattern.charAt(j)) % MOD;
+                ht = (ht * BASE + text.charAt(j)) % MOD;
+                if (j < m - 1) pw = (pw * BASE) % MOD;
+            }
+            for (int i = 0; i + m <= n; i++) {
+                if (hp == ht) {
+                    int j = 0;
+                    while (j < m && text.charAt(i + j) == pattern.charAt(j)) j++;
+                    if (j == m) res.add(i);
+                }
+                if (i + m < n) {
+                    ht = ((ht - text.charAt(i) * pw) % MOD + MOD) % MOD;
+                    ht = (ht * BASE + text.charAt(i + m)) % MOD;
+                }
+            }
+        }
+        Map<String, Object> out = new HashMap<>();
+        out.put("positions", res);
+        return out;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Object suffix(Map<String, Object> req) {
+        String text = (String) req.get("text");
         int n = text.length();
-        if (n == 0) return new Object[]{ new int[0], new int[0], "" };
+        Map<String, Object> res = new HashMap<>();
+        
+        if (n == 0) {
+            res.put("sa", new int[0]);
+            res.put("lcp", new int[0]);
+            res.put("repeated", "");
+            return res;
+        }
 
         Integer[] sa = new Integer[n];
         int[] rank = new int[n];
@@ -233,7 +304,10 @@ public class Algorithms {
         for (int i = 0; i < n; i++) if (lcp[i] > best) { best = lcp[i]; bi = i; }
         String rep = best > 0 ? text.substring(saInt[bi], saInt[bi] + best) : "";
 
-        return new Object[]{ saInt, lcp, rep };
+        res.put("sa", saInt);
+        res.put("lcp", lcp);
+        res.put("repeated", rep);
+        return res;
     }
 
     static class AcNode {
@@ -241,7 +315,11 @@ public class Algorithms {
         int fail = 0;
     }
 
-    public static List<List<Long>> aho(List<String> patterns, List<String> texts) {
+    @SuppressWarnings("unchecked")
+    public static Object aho(Map<String, Object> req) {
+        List<String> patterns = (List<String>) req.get("patterns");
+        List<String> texts = (List<String>) req.get("texts");
+
         ArrayList<AcNode> trie = new ArrayList<>();
         trie.add(new AcNode());
         for (int idx = 0; idx < patterns.size(); idx++) {
@@ -317,6 +395,9 @@ public class Algorithms {
             for (int idx = 0; idx < patterns.size(); idx++) row.add(visit[terminal[idx]]);
             result.add(row);
         }
-        return result;
+        
+        Map<String, Object> res = new HashMap<>();
+        res.put("counts", result);
+        return res;
     }
 }
